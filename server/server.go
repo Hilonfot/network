@@ -119,5 +119,3 @@ func (s *Server) AddRouter(msgId uint32, router conn.Router) {
 	s.MsgHandle.AddRouter(msgId, router)
 	log.Info("Add Router success!")
 }
-
-// 设置hook函数 >>>>>>

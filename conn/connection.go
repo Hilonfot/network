@@ -51,7 +51,7 @@ func NewConnection(ConnMgr *ConnManager, conn *net.TCPConn, connID uint32, msgHa
 		ExitBuffChan: make(chan bool, 1),
 		MsgChan:      make(chan []byte),
 		MsgBuffChan:  make(chan []byte, globalobj.GlobalObject.MaxMsgChanLen),
-		Property:     nil,
+		Property:     make(map[string]interface{}),
 	}
 	return c
 }
@@ -61,6 +61,8 @@ func (c *Connection) Start() {
 	// 开启处理该连接取到客户端数据之后的请求业务
 	go c.StartReader()
 	go c.StartWrite()
+
+	c.ConnMgr.CallOnConnStart(c)
 
 	for {
 		select {
@@ -164,6 +166,9 @@ func (c *Connection) Stop() {
 	}
 
 	c.IsClosed = true
+
+	// 调用Stop  Hook 回调函数
+	c.ConnMgr.CallOnConnStop(c)
 
 	// 关闭socket连接
 	c.Conn.Close()

@@ -11,7 +11,6 @@ type Engine struct {
 
 func NewEngine() *Engine {
 	s := server.NewServer()
-	// runtime.GOMAXPROCS(runtime.NumCPU())
 	return &Engine{server: s}
 }
 
@@ -21,4 +20,12 @@ func (e *Engine) AddRouter(msgId uint32, router conn.Router) {
 
 func (e *Engine) Run() {
 	e.server.Server()
+}
+
+func (e *Engine) SetOnConnStart(hookFunc func(conn *conn.Connection)) {
+	e.server.ConnMgr.SetOnConnStart(hookFunc)
+}
+
+func (e *Engine) SetOnConnStop(hookFunc func(conn *conn.Connection)) {
+	e.server.ConnMgr.SetOnConnStop(hookFunc)
 }

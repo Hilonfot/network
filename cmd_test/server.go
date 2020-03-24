@@ -35,11 +35,42 @@ func (h *HelloRouter) Handle(r *conn.Request) {
 	}
 }
 
+// 创建连接的时候执行
+func DoConnBegin(conn *conn.Connection) {
+	log.Info("DoConnection Begin is Called...")
+
+	// 设置两个连接属性，在创建连接之后
+	log.Info("Set conn Name, Home done")
+
+	conn.SetProperty("Name", "hilonfot")
+	conn.SetProperty("Home", "http://hilonfot.com")
+
+	err := conn.SendMsg(2, []byte("DoConnection Begin... "))
+	if err != nil {
+		log.Error(err.Error())
+	}
+}
+
+// 断开连接的时候执行
+func DoConnLost(conn *conn.Connection) {
+	if name, err := conn.GetProperty("Name"); err == nil {
+		log.Info("Conn Property Name = ", name)
+	}
+
+	if home, err := conn.GetProperty("Home"); err == nil {
+		log.Info("Conn Property Home = ", home)
+	}
+
+	log.Info("DoConnectionLost is Called...")
+
+}
+
 func main() {
 	// 创建一个server
 	s := network.NewEngine()
 	// 注册回调hook函数
-
+	s.SetOnConnStart(DoConnBegin)
+	s.SetOnConnStop(DoConnLost)
 	// 配置路由
 	s.AddRouter(0, &PingRouter{})
 	s.AddRouter(1, &HelloRouter{})

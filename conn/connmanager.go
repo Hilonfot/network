@@ -9,7 +9,14 @@ import (
 // 连接管理模块
 type ConnManager struct {
 	connections map[uint32]*Connection // 管理的连接信息
-	mx          sync.RWMutex
+
+	// 当前server 创建连接时的hook函数
+	OnConnStart func(conn *Connection)
+
+	// 当前server 断开连接时的hook函数
+	OnConnStop func(conn *Connection)
+
+	mx sync.RWMutex
 }
 
 // new
@@ -64,5 +71,44 @@ func (c *ConnManager) ClearConn() {
 		delete(c.connections, connID)
 	}
 	log.Info("Clear All Connections successfully : conn num = ", c.Len())
+}
 
+// 设置hook函数 >>>>>>
+
+// 设置server 连接创建时的hook函数
+func (c *ConnManager) SetOnConnStart(hookFunc func(conn *Connection)) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	c.OnConnStart = hookFunc
+}
+
+// 设置server 断开连接时的hook函数
+func (c *ConnManager) SetOnConnStop(hook func(conn *Connection)) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	c.OnConnStop = hook
+}
+
+// 调用连接时OnConnStart Hook函数
+func (c *ConnManager) CallOnConnStart(conn *Connection) {
+	c.mx.RLock()
+	defer c.mx.RUnlock()
+
+	if c.OnConnStart != nil {
+		log.Info("--->Call On Conn Start...")
+		c.OnConnStart(conn)
+	}
+}
+
+// 调用断开时OnConnStop Hook 函数
+func (c *ConnManager) CallOnConnStop(conn *Connection) {
+	c.mx.RLock()
+	defer c.mx.RUnlock()
+
+	if c.OnConnStop != nil {
+		log.Info("---> CallOnConnStop...")
+		c.OnConnStart(conn)
+	}
 }
