@@ -66,13 +66,6 @@ func (c *Connection) Start() {
 
 	c.ConnMgr.CallOnConnStart(c)
 
-	for {
-		select {
-		case <-c.ExitBuffChan:
-			// 得到退出消息，不再阻塞
-			return
-		}
-	}
 }
 
 // 读写分离
@@ -119,9 +112,9 @@ func (c *Connection) StartReader() {
 
 		// 读取客户端的msg head
 		headData := make([]byte, dp.GetHeadLen())
-		if _, err := io.ReadFull(c.GetTCPConnetcion(), headData); err != nil {
+		if _, err := io.ReadFull(c.GetTCPConnetcion(), headData); err != nil && err.Error() != "EOF" {
 			log.Info("read msg head error ", err.Error())
-			c.ExitBuffChan <- true
+			// c.ExitBuffChan <- true
 			break
 		}
 
@@ -129,7 +122,7 @@ func (c *Connection) StartReader() {
 		msg, err := dp.UpPack(headData)
 		if err != nil {
 			log.Info("unpack error ", err)
-			c.ExitBuffChan <- true
+			// c.ExitBuffChan <- true
 			break
 		}
 
@@ -138,7 +131,7 @@ func (c *Connection) StartReader() {
 		if msg.GetDataLen() > 0 {
 			data = make([]byte, msg.GetDataLen())
 			if _, err := io.ReadFull(c.GetTCPConnetcion(), data); err != nil {
-				c.ExitBuffChan <- true
+				// c.ExitBuffChan <- true
 				break
 			}
 		}

@@ -11,4 +11,5 @@ replace (
 	github.com/hilonfot/network/utils => ./utils
 	github.com/hilonfot/network/utils/catch => ./utils/catch
 	github.com/hilonfot/network/utils/log => ./utils/log
+
 )
