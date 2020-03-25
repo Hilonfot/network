@@ -24,7 +24,8 @@ type Connection struct {
 	MsgHanler *MsgHandle
 
 	// 告知该连接已退出 / 停止的channel
-	ExitBuffChan chan bool
+	ExitBuffChan  chan bool
+	ExitStartChan chan bool
 	// 给缓冲队列发送数据的channel
 	// 如果向缓冲队列发送数据，那么把数据发送到这个channel下
 	// SendBuffChan chan []byte
@@ -44,15 +45,16 @@ type Connection struct {
 // 创建连接
 func NewConnection(ConnMgr *ConnManager, conn *net.TCPConn, connID uint32, msgHandler *MsgHandle) *Connection {
 	c := &Connection{
-		ConnMgr:      ConnMgr,
-		Conn:         conn,
-		ConnID:       connID,
-		IsClosed:     false,
-		MsgHanler:    msgHandler,
-		ExitBuffChan: make(chan bool, 1),
-		MsgChan:      make(chan []byte),
-		MsgBuffChan:  make(chan []byte, globalobj.GlobalObject.MaxMsgChanLen),
-		Property:     make(map[string]interface{}),
+		ConnMgr:       ConnMgr,
+		Conn:          conn,
+		ConnID:        connID,
+		IsClosed:      false,
+		MsgHanler:     msgHandler,
+		ExitBuffChan:  make(chan bool, 1),
+		ExitStartChan: make(chan bool, 1),
+		MsgChan:       make(chan []byte),
+		MsgBuffChan:   make(chan []byte, globalobj.GlobalObject.MaxMsgChanLen),
+		Property:      make(map[string]interface{}),
 	}
 	return c
 }
@@ -66,6 +68,10 @@ func (c *Connection) Start() {
 
 	c.ConnMgr.CallOnConnStart(c)
 
+	select {
+	case <-c.ExitStartChan:
+		return
+	}
 }
 
 // 读写分离
@@ -106,6 +112,7 @@ func (c *Connection) StartReader() {
 	log.Info("Reader Goroutine is running")
 	defer log.Info(c.RemoteAddr().String(), " conn reader exit!")
 	defer c.Stop()
+
 	for {
 		// 创建拆包解包对象
 		dp := message.NewDataPack()
@@ -114,7 +121,6 @@ func (c *Connection) StartReader() {
 		headData := make([]byte, dp.GetHeadLen())
 		if _, err := io.ReadFull(c.GetTCPConnetcion(), headData); err != nil && err.Error() != "EOF" {
 			log.Info("read msg head error ", err.Error())
-			// c.ExitBuffChan <- true
 			break
 		}
 
@@ -122,7 +128,6 @@ func (c *Connection) StartReader() {
 		msg, err := dp.UpPack(headData)
 		if err != nil {
 			log.Info("unpack error ", err)
-			// c.ExitBuffChan <- true
 			break
 		}
 
@@ -131,7 +136,6 @@ func (c *Connection) StartReader() {
 		if msg.GetDataLen() > 0 {
 			data = make([]byte, msg.GetDataLen())
 			if _, err := io.ReadFull(c.GetTCPConnetcion(), data); err != nil {
-				// c.ExitBuffChan <- true
 				break
 			}
 		}
@@ -176,6 +180,7 @@ func (c *Connection) Stop() {
 
 	// 通知从缓冲队列读取数据的业务，该连接已经关闭
 	c.ExitBuffChan <- true
+	c.ExitStartChan <- true
 
 	// 将连接从连接管理器中删除
 	c.ConnMgr.Remove(c)
