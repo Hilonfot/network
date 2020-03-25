@@ -16,7 +16,7 @@ func PanicHandler() {
 
 	timeStr := now.Format("20060102150405")
 	fName := fmt.Sprintf("%s-%d-%s-dump.log", exeName, pid, timeStr)
-	log.Info("dump to file ", fName)
+	log.Error("dump to file ", fName)
 
 	f, err := os.Create(fName)
 	if err != nil {
