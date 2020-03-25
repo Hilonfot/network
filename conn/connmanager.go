@@ -109,6 +109,6 @@ func (c *ConnManager) CallOnConnStop(conn *Connection) {
 
 	if c.OnConnStop != nil {
 		log.Info("---> CallOnConnStop...")
-		c.OnConnStart(conn)
+		c.OnConnStop(conn)
 	}
 }
