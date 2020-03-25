@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/hilonfot/network/message"
 	"github.com/hilonfot/network/server/globalobj"
+	"github.com/hilonfot/network/utils/catch"
 	"github.com/hilonfot/network/utils/log"
 	"io"
 	"net"
@@ -58,6 +59,7 @@ func NewConnection(ConnMgr *ConnManager, conn *net.TCPConn, connID uint32, msgHa
 
 // 启动连接，让当前连接开始工作
 func (c *Connection) Start() {
+
 	// 开启处理该连接取到客户端数据之后的请求业务
 	go c.StartReader()
 	go c.StartWrite()
@@ -75,6 +77,9 @@ func (c *Connection) Start() {
 
 // 读写分离
 func (c *Connection) StartWrite() {
+	// 捕获panic
+	defer catch.PanicHandler()
+
 	log.Info("Writer Goroutines  is running")
 	defer log.Info(c.RemoteAddr().String(), " conn writer exit!")
 
@@ -102,6 +107,9 @@ func (c *Connection) StartWrite() {
 }
 
 func (c *Connection) StartReader() {
+	// 捕获panic
+	defer catch.PanicHandler()
+
 	log.Info("Reader Goroutine is running")
 	defer log.Info(c.RemoteAddr().String(), " conn reader exit!")
 	defer c.Stop()
@@ -176,7 +184,7 @@ func (c *Connection) Stop() {
 	// 通知从缓冲队列读取数据的业务，该连接已经关闭
 	c.ExitBuffChan <- true
 
-	//将连接从连接管理器中删除
+	// 将连接从连接管理器中删除
 	c.ConnMgr.Remove(c)
 
 	// 关闭该连接的全部管道

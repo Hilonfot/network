@@ -3,6 +3,7 @@ package network
 import (
 	"github.com/hilonfot/network/conn"
 	"github.com/hilonfot/network/server"
+	"github.com/hilonfot/network/utils/catch"
 )
 
 type Engine struct {
@@ -10,6 +11,8 @@ type Engine struct {
 }
 
 func NewEngine() *Engine {
+	defer catch.PanicHandler()
+
 	s := server.NewServer()
 	return &Engine{server: s}
 }
