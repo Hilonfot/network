@@ -119,7 +119,7 @@ func (c *Connection) StartReader() {
 
 		// 读取客户端的msg head
 		headData := make([]byte, dp.GetHeadLen())
-		if _, err := io.ReadFull(c.GetTCPConnetcion(), headData); err != nil && err.Error() != "EOF" {
+		if _, err := io.ReadFull(c.GetTCPConnetcion(), headData); err != nil {
 			log.Info("read msg head error ", err.Error())
 			break
 		}
